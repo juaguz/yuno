@@ -1,0 +1,237 @@
+definitions:
+  api.CardCreation:
+    properties:
+      card_holder:
+        type: string
+      pan:
+        type: string
+    type: object
+  api.CardUpdate:
+    properties:
+      card_holder:
+        type: string
+    type: object
+  api.KeysResponse:
+    properties:
+      public_key:
+        type: string
+    type: object
+  dtos.BatchUpdate:
+    properties:
+      card_holder:
+        type: string
+      id:
+        type: string
+    type: object
+  dtos.BatchUpdateStatus:
+    properties:
+      card:
+        type: string
+      status:
+        $ref: '#/definitions/dtos.Status'
+    type: object
+  dtos.Card:
+    properties:
+      card_holder:
+        type: string
+      id:
+        type: string
+      pan:
+        type: string
+      user_id:
+        type: string
+    type: object
+  dtos.Status:
+    enum:
+    - succeeded
+    - failed
+    type: string
+    x-enum-varnames:
+    - Succeeded
+    - Failed
+info:
+  contact: {}
+paths:
+  /cards:
+    post:
+      consumes:
+      - application/json
+      description: Create a card with card holder and PAN
+      parameters:
+      - description: Card Creation Request
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/api.CardCreation'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dtos.Card'
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Create a new card
+      tags:
+      - cards
+  /cards/{cardID}:
+    delete:
+      description: Delete a card by its ID
+      parameters:
+      - description: Card ID
+        in: path
+        name: cardID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Invalid card ID
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Delete a card
+      tags:
+      - cards
+    get:
+      description: Retrieve a card by its ID
+      parameters:
+      - description: Card ID
+        in: path
+        name: cardID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dtos.Card'
+        "400":
+          description: Invalid card ID
+          schema:
+            type: string
+        "404":
+          description: Card not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Get a card
+      tags:
+      - cards
+    put:
+      consumes:
+      - application/json
+      description: Update a card's details by its ID
+      parameters:
+      - description: Card ID
+        in: path
+        name: cardID
+        required: true
+        type: string
+      - description: Card Update Request
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/api.CardUpdate'
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Invalid request body or card ID
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Update a card
+      tags:
+      - cards
+  /cards/batch:
+    put:
+      consumes:
+      - application/json
+      description: Update multiple cards in a single request
+      parameters:
+      - description: Batch Update Request
+        in: body
+        name: batch
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/dtos.BatchUpdate'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dtos.BatchUpdateStatus'
+            type: array
+        "400":
+          description: Invalid request body
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Batch update cards
+      tags:
+      - cards
+  /keys:
+    post:
+      description: Generates a new public key for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.KeysResponse'
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Create a new key
+      tags:
+      - keys
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

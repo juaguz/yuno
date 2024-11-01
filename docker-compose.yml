@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  vault:
+    image: vault:1.13.3
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+      VAULT_ADDR: "http://127.0.0.1:8200"
+    volumes:
+      - ./infra/vault/config:/vault/config
+    command: server -dev -config=/vault/config/vault-config.hcl
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - auth_network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./infra/keycloak/create_realm.sh:/opt/keycloak/create_realm.sh
+    command: start-dev
+    ports:
+      - "8080:8080"
+    networks:
+      - auth_network
+    depends_on:
+      - postgres
+
+  postgres:
+    #image: postgres:13
+    build:
+      dockerfile: ./infra/postgres/Dockerfile
+    container_name: postgres
+    environment:
+      POSTGRES_DB: yuno_db
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    volumes:
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infra/postgres/importuser.sh:/opt/importuser.sh
+    ports:
+      - "5432:5432"
+    networks:
+      - auth_network
+
+  app:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: app
+    restart:
+        always
+    env_file:
+      - .env
+    ports:
+      - "8082:8082"
+    networks:
+      - auth_network
+    depends_on:
+      - vault
+      - keycloak
+      - postgres
+
+networks:
+  auth_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
